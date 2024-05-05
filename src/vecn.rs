@@ -4,7 +4,7 @@ use std::{
 };
 
 /// Simple N-dimensional vector
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
 pub struct VecN<const DIMS: usize, T: Number>(pub [T; DIMS]);
 
 pub trait Number:

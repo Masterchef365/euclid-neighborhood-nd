@@ -1,6 +1,6 @@
 pub mod vecn;
+pub mod vecn_linalg;
 
-/*
 type IVecN<const D: usize> = vecn::VecN<D, i32>;
 type VecN<const D: usize> = vecn::VecN<D, f32>;
 
@@ -21,7 +21,7 @@ pub struct QueryAccelerator<const D: usize> {
     radius_sq: f32,
 }
 
-impl<const D: usize> QueryAccelerator {
+impl<const D: usize> QueryAccelerator<D> {
     /// Construct a new query accelerator
     pub fn new(points: &[VecN<D>], radius: f32) -> Self {
         let mut cells: HashMap<IVecN<D>, CellContainer> = HashMap::default();
@@ -30,7 +30,7 @@ impl<const D: usize> QueryAccelerator {
             cells.entry(quantize(point, radius)).or_default().push(idx);
         }
 
-        let neighbors = neighborhood::<3>();
+        let neighbors = neighborhood::<D>();
 
         Self {
             cells,
@@ -62,7 +62,7 @@ impl<const D: usize> QueryAccelerator {
         self.neighbors
             .iter()
             .filter_map(move |diff| {
-                let key = add(origin, *diff);
+                let key = origin + *diff;
                 self.cells.get(&key).map(|cell_indices| {
                     cell_indices.iter().copied().filter(move |&idx| {
                         let dist = (points[idx] - query_point).length_squared();
@@ -84,7 +84,7 @@ impl<const D: usize> QueryAccelerator {
         self.neighbors
             .iter()
             .filter_map(move |diff| {
-                let key = add(origin, *diff);
+                let key = origin + *diff;
                 self.cells.get(&key).map(|cell_indices| {
                     cell_indices
                         .iter()
@@ -153,4 +153,3 @@ fn combos<const D: usize>(min: i32, max: i32, step: i32) -> Vec<IVecN<D>> {
         }
     }
 }
-*/
