@@ -1,6 +1,6 @@
 use std::{
     array,
-    ops::{Add, Div, Index, IndexMut, Mul, Sub},
+    ops::{Add, Div, Index, IndexMut, Mul, Rem, Sub},
 };
 
 /// Simple N-dimensional vector
@@ -15,6 +15,7 @@ pub trait Number:
     + Sub<Output = Self>
     + Mul<Output = Self>
     + Div<Output = Self>
+    + Rem<Output = Self>
 {
 }
 
@@ -26,22 +27,31 @@ impl<T> Number for T where
         + Sub<Output = Self>
         + Mul<Output = Self>
         + Div<Output = Self>
+        + Rem<Output = Self>
 {
 }
 
 impl<const DIMS: usize, T: Number> VecN<DIMS, T> {
-    pub fn merge<M>(self, rhs: Self, merger: M) -> Self
+    pub fn merge<M, U, V>(self, rhs: VecN<DIMS, U>, merger: M) -> VecN<DIMS, V>
     where
-        M: Fn(T, T) -> T,
+        U: Number, V: Number,
+        M: Fn(T, U) -> V,
     {
-        Self(array::from_fn(|i| merger(self[i], rhs[i])))
+        VecN(array::from_fn(|i| merger(self[i], rhs[i])))
     }
 
-    pub fn map<F>(self, f: F) -> Self
+    pub fn map<F, U>(self, f: F) -> VecN<DIMS, U>
     where
-        F: Fn(T) -> T,
+        U: Number,
+        F: Fn(T) -> U,
     {
-        Self(self.0.map(f))
+        VecN(self.0.map(f))
+    }
+}
+
+impl<const DIMS: usize, T: Number> Default for VecN<DIMS, T> {
+    fn default() -> Self {
+        Self([T::default(); DIMS])
     }
 }
 
@@ -82,6 +92,7 @@ math_op!(Add, add, |a, b| a + b);
 math_op!(Sub, sub, |a, b| a - b);
 math_op!(Div, div, |a, b| a / b);
 math_op!(Mul, mul, |a, b| a * b);
+math_op!(Rem, rem, |a, b| a % b);
 
 
 #[cfg(test)]

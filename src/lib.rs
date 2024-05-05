@@ -1,6 +1,9 @@
 pub mod vecn;
 
 /*
+type IVecN<const D: usize> = vecn::VecN<D, i32>;
+type VecN<const D: usize> = vecn::VecN<D, f32>;
+
 use smallvec::SmallVec;
 
 // TODO: Upgrade this to a more specialized approach!
@@ -11,17 +14,17 @@ use zwohash::HashMap;
 type CellContainer = SmallVec<[usize; 4]>;
 
 /// Euclidean neighborhood query accelerator. Uses a hashmap grid.
-pub struct QueryAccelerator<const Dims: usize> {
-    cells: HashMap<[i32; Dims], CellContainer>,
-    neighbors: Vec<[i32; Dims]>,
+pub struct QueryAccelerator<const D: usize> {
+    cells: HashMap<IVecN<D>, CellContainer>,
+    neighbors: Vec<IVecN<D>>,
     radius: f32,
     radius_sq: f32,
 }
 
-impl<const Dims: usize> QueryAccelerator {
+impl<const D: usize> QueryAccelerator {
     /// Construct a new query accelerator
-    pub fn new(points: &[VecN], radius: f32) -> Self {
-        let mut cells: HashMap<[i32; 3], CellContainer> = HashMap::default();
+    pub fn new(points: &[VecN<D>], radius: f32) -> Self {
+        let mut cells: HashMap<IVecN<D>, CellContainer> = HashMap::default();
 
         for (idx, &point) in points.iter().enumerate() {
             cells.entry(quantize(point, radius)).or_default().push(idx);
@@ -50,9 +53,9 @@ impl<const Dims: usize> QueryAccelerator {
     // Query the neighbors of `queried_idx` in `points`
     pub fn query_neighbors<'s, 'p: 's>(
         &'s self,
-        points: &'p [VecN],
+        points: &'p [VecN<D>],
         query_idx: usize,
-        query_point: VecN,
+        query_point: VecN<D>,
     ) -> impl Iterator<Item = usize> + 's {
         let origin = quantize(query_point, self.radius);
 
@@ -74,7 +77,7 @@ impl<const Dims: usize> QueryAccelerator {
     pub fn query_neighbors_fast<'s, 'p: 's>(
         &'s self,
         query_idx: usize,
-        query_point: VecN,
+        query_point: VecN<D>,
     ) -> impl Iterator<Item = usize> + 's {
         let origin = quantize(query_point, self.radius);
 
@@ -92,7 +95,7 @@ impl<const Dims: usize> QueryAccelerator {
             .flatten()
     }
 
-    pub fn replace_point(&mut self, idx: usize, prev: VecN, current: VecN) {
+    pub fn replace_point(&mut self, idx: usize, prev: VecN<D>, current: VecN<D>) {
         // TODO: Keep points in sorted order and use binary search! Or use hashsets for O(n)?
         // Find this point in our cells and remove it
         let prev_bins = self.cells.get_mut(&quantize(prev, self.radius)).unwrap();
@@ -118,34 +121,29 @@ impl<const Dims: usize> QueryAccelerator {
     }
 
     /*
-    pub fn tiles(&self) -> impl Iterator<Item = (&[i32; 3], &Vec<usize>)> {
+    pub fn tiles(&self) -> impl Iterator<Item = (&IVecN<D>, &Vec<usize>)> {
         self.cells.iter()
     }
     */
 }
 
-fn add(mut a: [i32; 3], b: [i32; 3]) -> [i32; 3] {
-    a.iter_mut().zip(b).for_each(|(a, b)| *a += b);
-    a
+fn quantize<const D: usize>(p: VecN<D>, radius: f32) -> IVecN<D> {
+    p.map(|v| (v / radius).floor() as i32)
 }
 
-fn quantize(p: VecN, radius: f32) -> [i32; 3] {
-    (*p.as_ref()).map(|v| (v / radius).floor() as i32)
-}
-
-fn neighborhood<const N: usize>() -> Vec<[i32; N]> {
+fn neighborhood<const D: usize>() -> Vec<IVecN<D>> {
     combos(-1, 1, 1)
 }
 
-fn combos<const Dims: usize>(min: i32, max: i32, step: i32) -> Vec<[i32; Dims]> {
-    let mut dims = [min; N];
+fn combos<const D: usize>(min: i32, max: i32, step: i32) -> Vec<IVecN<D>> {
+    let mut dims = vecn::VecN([min; D]);
     let mut combos = vec![];
     loop {
         combos.push(dims);
-        if dims == [max; N] {
+        if dims == vecn::VecN([max; D]) {
             break combos;
         }
-        for i in 0..dims.len() {
+        for i in 0..D {
             if dims[i] < max {
                 dims[i] += step;
                 break;
@@ -155,5 +153,4 @@ fn combos<const Dims: usize>(min: i32, max: i32, step: i32) -> Vec<[i32; Dims]> 
         }
     }
 }
-
 */
